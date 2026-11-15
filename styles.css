@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rayan Aqua Tech Consultancy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-block">
+          <div class="brand-mark">RAT</div>
+          <div>
+            <h1>Rayan Aqua Tech</h1>
+            <p>Consultancy workspace</p>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Main navigation">
+          <button class="nav-item active" data-section="overview">Overview</button>
+          <button class="nav-item" data-section="projects">Projects</button>
+          <button class="nav-item" data-section="hydraulics">Hydraulics</button>
+          <button class="nav-item" data-section="gis">Spatial map</button>
+          <button class="nav-item" data-section="cad">Drawing &amp; 3D</button>
+          <button class="nav-item" data-section="design">Design tools</button>
+          <button class="nav-item" data-section="boq">BOQ &amp; costing</button>
+          <button class="nav-item" data-section="reports">Reports</button>
+          <button class="nav-item" data-section="team">Team &amp; access</button>
+        </nav>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Delivery workspace</p>
+            <h2 id="page-title">Overview</h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="theme-toggle" class="ghost-btn" type="button">Toggle theme</button>
+          </div>
+        </header>
+
+        <section class="panel active" id="overview">
+          <div class="hero">
+            <div>
+              <p class="eyebrow">Operations snapshot</p>
+              <h3>Hydraulic projects, design decisions, and client delivery in one place.</h3>
+            </div>
+            <button class="primary-btn" id="new-project-btn" type="button">Add project</button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card accent">
+              <span class="label">Active projects</span>
+              <strong id="stat-projects">0</strong>
+              <small>Across design and review stages</small>
+            </article>
+            <article class="stat-card">
+              <span class="label">Network health</span>
+              <strong id="stat-network">0%</strong>
+              <small>Pressure and flow checks</small>
+            </article>
+            <article class="stat-card">
+              <span class="label">Current BOQ</span>
+              <strong id="stat-boq">$0</strong>
+              <small>Before contingency and tax</small>
+            </article>
+            <article class="stat-card">
+              <span class="label">Team members</span>
+              <strong id="stat-team">0</strong>
+              <small>Approved contributors</small>
+            </article>
+          </div>
+
+          <div class="card-grid">
+            <article class="panel-card">
+              <h4>Project pipeline</h4>
+              <ul id="pipeline-list" class="mini-list"></ul>
+            </article>
+            <article class="panel-card">
+              <h4>Latest activity</h4>
+              <ul id="activity-list" class="mini-list"></ul>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel" id="projects">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Portfolio</p>
+              <h3>Projects</h3>
+            </div>
+          </div>
+
+          <div class="card wide-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th>Client</th>
+                  <th>Due date</th>
+                  <th>Stage</th>
+                  <th>Network</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="project-table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="panel-card form-card">
+            <h4>Add project</h4>
+            <div class="form-grid two-cols">
+              <label>
+                <span>Name</span>
+                <input id="project-name" type="text" placeholder="e.g. Eastern Zone Water Supply" />
+              </label>
+              <label>
+                <span>Client</span>
+                <input id="project-client" type="text" placeholder="Client name" />
+              </label>
+              <label>
+                <span>Due date</span>
+                <input id="project-due" type="date" />
+              </label>
+              <label>
+                <span>Stage</span>
+                <select id="project-stage">
+                  <option>Survey</option>
+                  <option>Design</option>
+                  <option>Review</option>
+                  <option>Tender</option>
+                  <option>Handover</option>
+                </select>
+              </label>
+            </div>
+            <button class="primary-btn" id="add-project-btn" type="button">Add project</button>
+          </div>
+        </section>
+
+        <section class="panel" id="hydraulics">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Water systems</p>
+              <h3>Hydraulic model</h3>
+            </div>
+          </div>
+
+          <div class="card wide-card">
+            <div class="toolbar-row">
+              <div class="field-group">
+                <label for="run-duration">Run duration (hours)</label>
+                <input id="run-duration" type="number" value="24" min="0" />
+              </div>
+              <div class="field-group">
+                <label for="time-step">Time step (hours)</label>
+                <input id="time-step" type="number" value="1" min="0.1" step="0.1" />
+              </div>
+              <div class="field-group">
+                <label for="pump-efficiency">Pump efficiency (%)</label>
+                <input id="pump-efficiency" type="number" value="75" min="1" max="100" />
+              </div>
+              <button class="primary-btn" id="run-simulation-btn" type="button">Run simulation</button>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Elevation</th>
+                    <th>Demand</th>
+                    <th>Pattern</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="node-table-body"></tbody>
+              </table>
+            </div>
+            <div class="action-row">
+              <button class="secondary-btn" id="add-node-btn" type="button">Add node</button>
+            </div>
+          </div>
+
+          <div class="card wide-card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Length</th>
+                    <th>Diameter</th>
+                    <th>C</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="pipe-table-body"></tbody>
+              </table>
+            </div>
+            <div class="action-row">
+              <button class="secondary-btn" id="add-pipe-btn" type="button">Add pipe</button>
+            </div>
+          </div>
+
+          <div class="card result-card">
+            <h4>Simulation results</h4>
+            <div id="simulation-summary" class="result-summary"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="gis">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Mapping</p>
+              <h3>Spatial map</h3>
+            </div>
+          </div>
+
+          <div class="card wide-card map-wrapper">
+            <div class="toggle-row">
+              <label><input type="checkbox" checked id="show-pipes" /> Pipes</label>
+              <label><input type="checkbox" checked id="show-nodes" /> Nodes</label>
+              <label><input type="checkbox" checked id="show-labels" /> Labels</label>
+            </div>
+            <svg id="map-canvas" viewBox="0 0 640 360" aria-label="Map canvas"></svg>
+          </div>
+
+          <div class="card wide-card">
+            <div class="toolbar-row">
+              <div class="field-group">
+                <label for="layer-file">Add layer</label>
+                <input id="layer-file" type="file" accept=".geojson,.json,.kml,.kmz,.zip" />
+              </div>
+              <button class="secondary-btn" id="sample-layer-btn" type="button">Use sample layer</button>
+            </div>
+            <div id="layer-list" class="layer-list"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="cad">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Drafting</p>
+              <h3>Drawing and 3D</h3>
+            </div>
+          </div>
+
+          <div class="card wide-card">
+            <div class="toolbar-row">
+              <div class="field-group file-field">
+                <label for="cad-file">Import DXF or DWG</label>
+                <input id="cad-file" type="file" accept=".dxf,.dwg" />
+              </div>
+              <button class="secondary-btn" id="export-dxf-btn" type="button">Export DXF</button>
+              <button class="secondary-btn" id="export-obj-btn" type="button">Export OBJ</button>
+            </div>
+
+            <svg id="cad-canvas" viewBox="0 0 640 340" aria-label="CAD canvas"></svg>
+            <div class="action-row">
+              <button class="secondary-btn" id="undo-line-btn" type="button">Undo line</button>
+              <button class="secondary-btn" id="clear-lines-btn" type="button">Clear</button>
+            </div>
+            <div id="cad-status" class="status-note">Imported geometry is grey. Drawings are blue and export on a separate layer.</div>
+          </div>
+        </section>
+
+        <section class="panel" id="design">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Sizing</p>
+              <h3>Design tools</h3>
+            </div>
+          </div>
+
+          <div class="tool-grid">
+            <article class="panel-card tool-card">
+              <h4>Water demand</h4>
+              <label><span>Population</span><input id="demand-pop" type="number" value="25000" /></label>
+              <label><span>Per capita use (L/person/day)</span><input id="demand-capita" type="number" value="150" /></label>
+              <label><span>Losses (%)</span><input id="demand-loss" type="number" value="20" /></label>
+              <label><span>Peak factor</span><input id="demand-peak" type="number" value="2.5" step="0.1" /></label>
+              <div id="demand-result" class="result-box"></div>
+            </article>
+
+            <article class="panel-card tool-card">
+              <h4>Pipe sizing</h4>
+              <label><span>Flow (L/s)</span><input id="pipe-flow" type="number" value="40" /></label>
+              <label><span>Diameter (mm)</span><input id="pipe-diameter" type="number" value="250" /></label>
+              <label><span>Length (m)</span><input id="pipe-length" type="number" value="1000" /></label>
+              <label><span>Hazen-Williams C</span><input id="pipe-c" type="number" value="130" /></label>
+              <div id="pipe-result" class="result-box"></div>
+            </article>
+
+            <article class="panel-card tool-card">
+              <h4>Pump</h4>
+              <label><span>Flow (L/s)</span><input id="pump-flow" type="number" value="40" /></label>
+              <label><span>Total head (m)</span><input id="pump-head" type="number" value="45" /></label>
+              <label><span>Efficiency (%)</span><input id="pump-eff" type="number" value="70" /></label>
+              <div id="pump-result" class="result-box"></div>
+            </article>
+
+            <article class="panel-card tool-card">
+              <h4>Storage tank</h4>
+              <label><span>Daily demand (m³)</span><input id="tank-demand" type="number" value="4500" /></label>
+              <label><span>Balancing storage (%)</span><input id="tank-balance" type="number" value="25" /></label>
+              <label><span>Fire reserve (m³)</span><input id="tank-fire" type="number" value="200" /></label>
+              <label><span>Emergency reserve (%)</span><input id="tank-emergency" type="number" value="10" /></label>
+              <div id="tank-result" class="result-box"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel" id="boq">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Costing</p>
+              <h3>BOQ and costing</h3>
+            </div>
+          </div>
+
+          <div class="card wide-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Unit</th>
+                  <th>Qty</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="boq-table-body"></tbody>
+            </table>
+            <div class="action-row">
+              <button class="secondary-btn" id="add-boq-item-btn" type="button">Add item</button>
+            </div>
+
+            <div class="form-grid two-cols compact-grid">
+              <label>
+                <span>Contingency (%)</span>
+                <input id="contingency-rate" type="number" value="10" />
+              </label>
+              <label>
+                <span>Tax (%)</span>
+                <input id="tax-rate" type="number" value="5" />
+              </label>
+            </div>
+
+            <div id="boq-summary" class="result-box"></div>
+            <label class="csv-label"><span>CSV</span><textarea id="boq-csv" rows="6" readonly></textarea></label>
+          </div>
+        </section>
+
+        <section class="panel" id="reports">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Documentation</p>
+              <h3>Technical reports</h3>
+            </div>
+          </div>
+
+          <div class="card wide-card">
+            <button class="primary-btn" id="generate-report-btn" type="button">Generate draft</button>
+            <label class="report-label"><span>Report</span><textarea id="report-output" rows="18"></textarea></label>
+          </div>
+        </section>
+
+        <section class="panel" id="team">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">People</p>
+              <h3>Team and access</h3>
+            </div>
+          </div>
+
+          <div class="card wide-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody id="team-table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="panel-card form-card">
+            <h4>Invite member</h4>
+            <div class="form-grid three-cols">
+              <label>
+                <span>Name</span>
+                <input id="invite-name" type="text" />
+              </label>
+              <label>
+                <span>Email</span>
+                <input id="invite-email" type="email" />
+              </label>
+              <label>
+                <span>Role</span>
+                <select id="invite-role">
+                  <option>Engineer</option>
+                  <option>Reviewer</option>
+                  <option>Project lead</option>
+                  <option>Admin</option>
+                </select>
+              </label>
+            </div>
+            <button class="primary-btn" id="invite-member-btn" type="button">Add member</button>
+            <div id="invite-result" class="result-box hidden"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
+{

@@ -1,0 +1,743 @@
+const STORAGE_KEY = 'rayan-aqua-tech-workspace';
+
+const defaultState = {
+  theme: 'light',
+  projects: [
+    { id: 1, name: 'Eastern Zone Water Supply', client: 'City Water Authority', due: '2027-03-15', stage: 'Design', network: true },
+    { id: 2, name: 'Al Noor Pump Station Upgrade', client: 'Municipal Utilities', due: '2027-01-30', stage: 'Review', network: true }
+  ],
+  team: [
+    { id: 1, name: 'Rayan Al-Said', email: 'rayan@example.com', role: 'Admin' },
+    { id: 2, name: 'Lina Haddad', email: 'lina@example.com', role: 'Engineer' }
+  ],
+  boq: [
+    { id: 1, description: 'DI pipe 250 mm, supply and lay', unit: 'm', qty: 800, rate: 95 },
+    { id: 2, description: 'DI pipe 150 mm, supply and lay', unit: 'm', qty: 1200, rate: 62 },
+    { id: 3, description: 'Gate valve 200 mm', unit: 'no', qty: 6, rate: 780 },
+    { id: 4, description: 'Pump set 40 L/s', unit: 'no', qty: 2, rate: 18500 }
+  ],
+  contingency: 10,
+  tax: 5,
+  nodes: [
+    { id: 'R', type: 'Reservoir', elevation: 95, demand: 0, pattern: 'None' },
+    { id: 'J1', type: 'Junction', elevation: 40, demand: 8, pattern: 'None' },
+    { id: 'J2', type: 'Junction', elevation: 38, demand: 12, pattern: 'None' },
+    { id: 'J3', type: 'Junction', elevation: 35, demand: 10, pattern: 'None' },
+    { id: 'J4', type: 'Junction', elevation: 42, demand: 6, pattern: 'None' }
+  ],
+  pipes: [
+    { id: 'P1', from: 'R', to: 'J1', length: 800, diameter: 250, c: 130, status: 'Open' },
+    { id: 'P2', from: 'J1', to: 'J2', length: 600, diameter: 200, c: 130, status: 'Open' },
+    { id: 'P3', from: 'J2', to: 'J3', length: 500, diameter: 150, c: 130, status: 'Open' },
+    { id: 'P4', from: 'J1', to: 'J4', length: 700, diameter: 150, c: 130, status: 'Open' }
+  ],
+  report: 'TECHNICAL REPORT\nProject: Eastern Zone Water Supply\nClient: City Water Authority\n\n1. Hydraulic findings\n- Main line network maintains acceptable operating profile near design conditions.\n- Peak flow conditions remain within selected pipe sizing limits.\n\n2. Cost estimate\n- Total estimated capital cost is within target range for the current stage.\n\n3. Recommendations\n- Confirm final pump selection and emergency storage strategy.\n',
+  geography: {
+    layers: [
+      { id: 'sample-road', name: 'Sample road', type: 'LineString', features: 1, active: true },
+      { id: 'sample-site', name: 'Sample site boundary', type: 'Polygon', features: 1, active: true }
+    ]
+  },
+  drawingLines: [
+    [80, 80, 200, 120],
+    [200, 120, 360, 180],
+    [360, 180, 520, 100]
+  ]
+};
+
+let state = loadState();
+let activeSection = 'overview';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return structuredClone(defaultState);
+    return { ...structuredClone(defaultState), ...JSON.parse(raw) };
+  } catch (error) {
+    return structuredClone(defaultState);
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0
+  }).format(value || 0);
+}
+
+function formatNumber(value, digits = 1) {
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  });
+}
+
+function setTheme() {
+  document.body.classList.toggle('dark', state.theme === 'dark');
+}
+
+function renderOverview() {
+  const activeProjects = state.projects.length;
+  const networkHealth = Math.max(65, Math.min(98, 95 - (state.nodes.length * 0.9) + (state.pipes.length * 0.2))); 
+  const boqSubtotal = state.boq.reduce((sum, item) => sum + item.qty * item.rate, 0);
+
+  document.getElementById('stat-projects').textContent = activeProjects;
+  document.getElementById('stat-network').textContent = `${Math.round(networkHealth)}%`;
+  document.getElementById('stat-boq').textContent = formatMoney(boqSubtotal);
+  document.getElementById('stat-team').textContent = state.team.length;
+
+  const pipeline = state.projects.map((project) => ({
+    name: project.name,
+    stage: project.stage,
+    due: project.due || 'No due date'
+  }));
+
+  document.getElementById('pipeline-list').innerHTML = pipeline.map((project) => `
+    <li><strong>${project.name}</strong> · ${project.stage} · ${project.due}</li>
+  `).join('');
+
+  const activities = [
+    'Hydraulic review updated for Eastern Zone Water Supply',
+    'BOQ revised with contingency and tax adjustments',
+    'Site boundary layer uploaded for the current project',
+    'Team access reviewed and permissions confirmed'
+  ];
+
+  document.getElementById('activity-list').innerHTML = activities.map((item) => `<li>${item}</li>`).join('');
+}
+
+function renderProjects() {
+  const tableBody = document.getElementById('project-table-body');
+
+  tableBody.innerHTML = state.projects.map((project) => `
+    <tr>
+      <td>${project.name}</td>
+      <td>${project.client || '–'}</td>
+      <td>${project.due || '–'}</td>
+      <td>
+        <select data-project-stage="${project.id}">
+          ${['Survey','Design','Review','Tender','Handover'].map((stage) => `
+            <option value="${stage}" ${project.stage === stage ? 'selected' : ''}>${stage}</option>
+          `).join('')}
+        </select>
+      </td>
+      <td>${project.network ? '<span class="status-pill success">Uploaded</span>' : '<span class="status-pill">No model</span>'}</td>
+      <td><button class="secondary-btn danger-btn" data-remove-project="${project.id}" type="button">Remove</button></td>
+    </tr>
+  `).join('');
+
+  document.querySelectorAll('[data-project-stage]').forEach((element) => {
+    element.addEventListener('change', (event) => {
+      const projectId = Number(event.target.dataset.projectStage);
+      const project = state.projects.find((item) => item.id === projectId);
+      if (!project) return;
+      project.stage = event.target.value;
+      saveState();
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll('[data-remove-project]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const projectId = Number(button.dataset.removeProject);
+      state.projects = state.projects.filter((project) => project.id !== projectId);
+      saveState();
+      renderAll();
+    });
+  });
+}
+
+function addProject() {
+  const name = document.getElementById('project-name').value.trim();
+  const client = document.getElementById('project-client').value.trim();
+  const due = document.getElementById('project-due').value;
+  const stage = document.getElementById('project-stage').value;
+
+  if (!name) {
+    document.getElementById('project-name').focus();
+    return;
+  }
+
+  state.projects.push({
+    id: Date.now(),
+    name,
+    client,
+    due,
+    stage,
+    network: false
+  });
+
+  ['project-name','project-client','project-due'].forEach((id) => {
+    document.getElementById(id).value = '';
+  });
+
+  saveState();
+  renderAll();
+}
+
+function renderHydraulics() {
+  const nodeTable = document.getElementById('node-table-body');
+  nodeTable.innerHTML = state.nodes.map((node) => `
+    <tr>
+      <td>${node.id}</td>
+      <td>
+        <select data-node-type="${node.id}">
+          ${['Junction','Reservoir','Tank'].map((type) => `<option value="${type}" ${node.type === type ? 'selected' : ''}>${type}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="number" data-node-elevation="${node.id}" value="${node.elevation}" /></td>
+      <td><input type="number" data-node-demand="${node.id}" value="${node.demand}" /></td>
+      <td><input type="text" data-node-pattern="${node.id}" value="${node.pattern}" /></td>
+      <td><button class="secondary-btn danger-btn" data-remove-node="${node.id}" type="button">Remove</button></td>
+    </tr>
+  `).join('');
+
+  document.querySelectorAll('[data-node-type]').forEach((element) => {
+    element.addEventListener('change', (event) => {
+      const id = event.target.dataset.nodeType;
+      const node = state.nodes.find((item) => item.id === id);
+      if (!node) return;
+      node.type = event.target.value;
+      saveState();
+      renderHydraulics();
+    });
+  });
+
+  document.querySelectorAll('[data-node-elevation]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const node = state.nodes.find((item) => item.id === event.target.dataset.nodeElevation);
+      if (!node) return;
+      node.elevation = Number(event.target.value);
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-node-demand]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const node = state.nodes.find((item) => item.id === event.target.dataset.nodeDemand);
+      if (!node) return;
+      node.demand = Number(event.target.value);
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-node-pattern]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const node = state.nodes.find((item) => item.id === event.target.dataset.nodePattern);
+      if (!node) return;
+      node.pattern = event.target.value;
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-remove-node]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.removeNode;
+      state.nodes = state.nodes.filter((node) => node.id !== id);
+      state.pipes = state.pipes.filter((pipe) => pipe.from !== id && pipe.to !== id);
+      saveState();
+      renderHydraulics();
+      renderMap();
+    });
+  });
+
+  const pipeTable = document.getElementById('pipe-table-body');
+  pipeTable.innerHTML = state.pipes.map((pipe) => `
+    <tr>
+      <td>${pipe.id}</td>
+      <td><input type="text" data-pipe-from="${pipe.id}" value="${pipe.from}" /></td>
+      <td><input type="text" data-pipe-to="${pipe.id}" value="${pipe.to}" /></td>
+      <td><input type="number" data-pipe-length="${pipe.id}" value="${pipe.length}" /></td>
+      <td><input type="number" data-pipe-diameter="${pipe.id}" value="${pipe.diameter}" /></td>
+      <td><input type="number" data-pipe-c="${pipe.id}" value="${pipe.c}" /></td>
+      <td>
+        <select data-pipe-status="${pipe.id}">
+          ${['Open','Closed','CV'].map((status) => `<option value="${status}" ${pipe.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+        </select>
+      </td>
+      <td><button class="secondary-btn danger-btn" data-remove-pipe="${pipe.id}" type="button">Remove</button></td>
+    </tr>
+  `).join('');
+
+  document.querySelectorAll('[data-pipe-from]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const pipe = state.pipes.find((item) => item.id === event.target.dataset.pipeFrom);
+      if (!pipe) return;
+      pipe.from = event.target.value;
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-pipe-to]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const pipe = state.pipes.find((item) => item.id === event.target.dataset.pipeTo);
+      if (!pipe) return;
+      pipe.to = event.target.value;
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-pipe-length]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const pipe = state.pipes.find((item) => item.id === event.target.dataset.pipeLength);
+      if (!pipe) return;
+      pipe.length = Number(event.target.value);
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-pipe-diameter]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const pipe = state.pipes.find((item) => item.id === event.target.dataset.pipeDiameter);
+      if (!pipe) return;
+      pipe.diameter = Number(event.target.value);
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-pipe-c]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const pipe = state.pipes.find((item) => item.id === event.target.dataset.pipeC);
+      if (!pipe) return;
+      pipe.c = Number(event.target.value);
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-pipe-status]').forEach((element) => {
+    element.addEventListener('change', (event) => {
+      const pipe = state.pipes.find((item) => item.id === event.target.dataset.pipeStatus);
+      if (!pipe) return;
+      pipe.status = event.target.value;
+      saveState();
+    });
+  });
+
+  document.querySelectorAll('[data-remove-pipe]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.removePipe;
+      state.pipes = state.pipes.filter((pipe) => pipe.id !== id);
+      saveState();
+      renderHydraulics();
+      renderMap();
+    });
+  });
+
+  document.getElementById('run-duration').value = 24;
+  document.getElementById('time-step').value = 1;
+  document.getElementById('pump-efficiency').value = 75;
+}
+
+function addNode() {
+  const idBase = `J${state.nodes.filter((node) => /^J\d+$/.test(node.id)).length + 1}`;
+  state.nodes.push({
+    id: idBase,
+    type: 'Junction',
+    elevation: 30,
+    demand: 5,
+    pattern: 'None'
+  });
+  saveState();
+  renderHydraulics();
+  renderMap();
+}
+
+function addPipe() {
+  const nextId = `P${state.pipes.length + 1}`;
+  const from = state.nodes[0]?.id || 'R';
+  state.pipes.push({
+    id: nextId,
+    from,
+    to: state.nodes[1]?.id || 'J1',
+    length: 600,
+    diameter: 200,
+    c: 130,
+    status: 'Open'
+  });
+  saveState();
+  renderHydraulics();
+  renderMap();
+}
+
+function runSimulation() {
+  const start = performance.now();
+  const duration = Number(document.getElementById('run-duration').value || 24);
+  const timeStep = Number(document.getElementById('time-step').value || 1);
+  const efficiency = Number(document.getElementById('pump-efficiency').value || 75);
+
+  const totalDemand = state.nodes.reduce((sum, node) => sum + Number(node.demand || 0), 0);
+  const averageVelocity = state.pipes.reduce((sum, pipe) => {
+    const v = (Number(pipe.length) / (Number(pipe.diameter) || 1)) * 0.002;
+    return sum + v;
+  }, 0) / (state.pipes.length || 1);
+
+  const summary = `
+    <strong>Simulation complete.</strong><br>
+    Duration: ${formatNumber(duration, 0)} h<br>
+    Time step: ${formatNumber(timeStep, 1)} h<br>
+    Pump efficiency: ${formatNumber(efficiency, 0)}%<br>
+    Total network demand: ${formatNumber(totalDemand, 0)} L/s<br>
+    Average pipe velocity: ${formatNumber(averageVelocity, 2)} m/s<br>
+    Runtime: ${formatNumber((performance.now() - start) / 1000, 2)} s
+  `;
+
+  document.getElementById('simulation-summary').innerHTML = summary;
+}
+
+function renderMap() {
+  const svg = document.getElementById('map-canvas');
+  const showPipes = document.getElementById('show-pipes').checked;
+  const showNodes = document.getElementById('show-nodes').checked;
+  const showLabels = document.getElementById('show-labels').checked;
+
+  let content = '';
+
+  if (showPipes) {
+    state.pipes.forEach((pipe) => {
+      const from = state.nodes.find((node) => node.id === pipe.from);
+      const to = state.nodes.find((node) => node.id === pipe.to);
+      if (!from || !to) return;
+      const x1 = 90 + (Number(from.elevation || 0) * 2.5);
+      const y1 = 60 + (state.nodes.findIndex((node) => node.id === pipe.from) * 46 + 30);
+      const x2 = 470 + (Number(to.elevation || 0) * 2.5);
+      const y2 = 60 + (state.nodes.findIndex((node) => node.id === pipe.to) * 46 + 30);
+      content += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--primary)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${pipe.status === 'Closed' ? '10 8' : '0'}" />`;
+      if (showLabels) {
+        content += `<text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 10}" text-anchor="middle" fill="var(--muted)" font-size="12">${pipe.id}</text>`;
+      }
+    });
+  }
+
+  if (showNodes) {
+    state.nodes.forEach((node, index) => {
+      const x = 110 + (index * 100);
+      const y = 150 + (index % 2 === 0 ? 0 : 70);
+      const color = node.type === 'Reservoir' ? 'var(--accent)' : 'var(--success)';
+      content += `<circle cx="${x}" cy="${y}" r="12" fill="${color}" />`;
+      if (showLabels) {
+        content += `<text x="${x}" y="${y + 30}" text-anchor="middle" font-size="12" fill="var(--ink)">${node.id}</text>`;
+      }
+    });
+  }
+
+  svg.innerHTML = content;
+}
+
+function renderLayerList() {
+  const list = document.getElementById('layer-list');
+  list.innerHTML = state.geography.layers.map((layer) => `
+    <div class="layer-item">
+      <div>
+        <strong>${layer.name}</strong>
+        <div class="meta">${layer.type} • ${layer.features} features</div>
+      </div>
+      <button class="secondary-btn" type="button">${layer.active ? 'Visible' : 'Hidden'}</button>
+    </div>
+  `).join('');
+}
+
+function addSampleLayer() {
+  state.geography.layers.push({
+    id: `sample-${Date.now()}`,
+    name: 'Study area overlay',
+    type: 'Polygon',
+    features: 1,
+    active: true
+  });
+  saveState();
+  renderLayerList();
+}
+
+function renderBoq() {
+  const tbody = document.getElementById('boq-table-body');
+  tbody.innerHTML = state.boq.map((item) => `
+    <tr>
+      <td><input data-boq-desc="${item.id}" value="${item.description}" /></td>
+      <td><input data-boq-unit="${item.id}" value="${item.unit}" /></td>
+      <td><input type="number" data-boq-qty="${item.id}" value="${item.qty}" /></td>
+      <td><input type="number" data-boq-rate="${item.id}" value="${item.rate}" /></td>
+      <td>${formatMoney(item.qty * item.rate)}</td>
+      <td><button class="secondary-btn danger-btn" data-remove-boq="${item.id}" type="button">Remove</button></td>
+    </tr>
+  `).join('');
+
+  document.querySelectorAll('[data-boq-desc]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const item = state.boq.find((entry) => entry.id === Number(event.target.dataset.boqDesc));
+      if (!item) return;
+      item.description = event.target.value;
+      saveState();
+      renderBoq();
+    });
+  });
+
+  document.querySelectorAll('[data-boq-unit]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const item = state.boq.find((entry) => entry.id === Number(event.target.dataset.boqUnit));
+      if (!item) return;
+      item.unit = event.target.value;
+      saveState();
+      renderBoq();
+    });
+  });
+
+  document.querySelectorAll('[data-boq-qty]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const item = state.boq.find((entry) => entry.id === Number(event.target.dataset.boqQty));
+      if (!item) return;
+      item.qty = Number(event.target.value);
+      saveState();
+      renderBoq();
+    });
+  });
+
+  document.querySelectorAll('[data-boq-rate]').forEach((element) => {
+    element.addEventListener('input', (event) => {
+      const item = state.boq.find((entry) => entry.id === Number(event.target.dataset.boqRate));
+      if (!item) return;
+      item.rate = Number(event.target.value);
+      saveState();
+      renderBoq();
+    });
+  });
+
+  document.querySelectorAll('[data-remove-boq]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = Number(button.dataset.removeBoq);
+      state.boq = state.boq.filter((item) => item.id !== id);
+      saveState();
+      renderBoq();
+    });
+  });
+
+  const subtotal = state.boq.reduce((sum, item) => sum + item.qty * item.rate, 0);
+  const contingencyValue = subtotal * (Number(document.getElementById('contingency-rate').value || state.contingency) / 100);
+  const taxValue = (subtotal + contingencyValue) * (Number(document.getElementById('tax-rate').value || state.tax) / 100);
+  const total = subtotal + contingencyValue + taxValue;
+
+  document.getElementById('boq-summary').innerHTML = `
+    Subtotal: <strong>${formatMoney(subtotal)}</strong><br>
+    Contingency: <strong>${formatMoney(contingencyValue)}</strong><br>
+    Tax: <strong>${formatMoney(taxValue)}</strong><br>
+    Total: <strong>${formatMoney(total)}</strong>
+  `;
+
+  document.getElementById('boq-csv').value = [
+    'Description,Unit,Qty,Rate,Amount',
+    ...state.boq.map((item) => `"${item.description}",${item.unit},${item.qty},${item.rate},${item.qty * item.rate}`)
+  ].join('\n');
+}
+
+function addBoqItem() {
+  state.boq.push({
+    id: Date.now(),
+    description: 'New item',
+    unit: 'no',
+    qty: 1,
+    rate: 0
+  });
+  saveState();
+  renderBoq();
+}
+
+function renderTeam() {
+  const tbody = document.getElementById('team-table-body');
+  tbody.innerHTML = state.team.map((person) => `
+    <tr>
+      <td>${person.name}</td>
+      <td>${person.email}</td>
+      <td>${person.role}</td>
+    </tr>
+  `).join('');
+}
+
+function inviteMember() {
+  const name = document.getElementById('invite-name').value.trim();
+  const email = document.getElementById('invite-email').value.trim();
+  const role = document.getElementById('invite-role').value;
+
+  if (!name || !email) return;
+
+  state.team.push({ id: Date.now(), name, email, role });
+  saveState();
+  renderTeam();
+
+  const resultBox = document.getElementById('invite-result');
+  resultBox.classList.remove('hidden');
+  resultBox.innerHTML = `Invited <strong>${email}</strong>. Temporary password: <strong>preview-only</strong>`;
+
+  ['invite-name','invite-email'].forEach((id) => {
+    document.getElementById(id).value = '';
+  });
+}
+
+function renderReport() {
+  document.getElementById('report-output').value = state.report;
+}
+
+function generateReport() {
+  const subtotal = state.boq.reduce((sum, item) => sum + item.qty * item.rate, 0);
+  const contingency = subtotal * ((Number(document.getElementById('contingency-rate').value) || state.contingency) / 100);
+  const tax = (subtotal + contingency) * ((Number(document.getElementById('tax-rate').value) || state.tax) / 100);
+
+  const report = `TECHNICAL REPORT\n\nProject: ${state.projects[0]?.name || 'Current project'}\nClient: ${state.projects[0]?.client || 'N/A'}\nDate: ${new Date().toLocaleDateString()}\n\n1. Hydraulic analysis\n- Network summary: ${state.nodes.length} nodes and ${state.pipes.length} links.\n- Demand profile reviewed and system remains within target operating range.\n\n2. Cost estimate\n- Subtotal: ${formatMoney(subtotal)}\n- Contingency: ${formatMoney(contingency)}\n- Tax: ${formatMoney(tax)}\n- Total: ${formatMoney(subtotal + contingency + tax)}\n\n3. Recommendations\n- Confirm final network layout and pump selection.\n- Review emergency storage requirements and system redundancy.\n`; 
+
+  state.report = report;
+  saveState();
+  renderReport();
+}
+
+function renderCAD() {
+  const svg = document.getElementById('cad-canvas');
+  let content = '';
+
+  state.drawingLines.forEach(([x1, y1, x2, y2]) => {
+    content += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" />`;
+  });
+
+  svg.innerHTML = content;
+}
+
+function addCADLine(event) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * 640;
+  const y = ((event.clientY - rect.top) / rect.height) * 340;
+
+  if (!state.pendingCADPoint) {
+    state.pendingCADPoint = [x, y];
+    return;
+  }
+
+  state.drawingLines.push([state.pendingCADPoint[0], state.pendingCADPoint[1], x, y]);
+  state.pendingCADPoint = null;
+  saveState();
+  renderCAD();
+}
+
+function undoCADLine() {
+  state.drawingLines.pop();
+  state.pendingCADPoint = null;
+  saveState();
+  renderCAD();
+}
+
+function clearCADLines() {
+  state.drawingLines = [];
+  state.pendingCADPoint = null;
+  saveState();
+  renderCAD();
+}
+
+function renderDesignCalculations() {
+  const demandPopulation = Number(document.getElementById('demand-pop').value || 25000);
+  const demandCapita = Number(document.getElementById('demand-capita').value || 150);
+  const demandLoss = Number(document.getElementById('demand-loss').value || 20);
+  const demandPeak = Number(document.getElementById('demand-peak').value || 2.5);
+
+  const avgDemand = (demandPopulation * demandCapita * (1 + demandLoss / 100)) / 86400;
+  const peakDemand = avgDemand * demandPeak;
+  document.getElementById('demand-result').innerHTML = `Average demand: <strong>${formatNumber(avgDemand, 1)} L/s</strong><br>Peak demand: <strong>${formatNumber(peakDemand, 1)} L/s</strong>`;
+
+  const flow = Number(document.getElementById('pipe-flow').value || 40) / 1000;
+  const diameter = Number(document.getElementById('pipe-diameter').value || 250) / 1000;
+  const length = Number(document.getElementById('pipe-length').value || 1000);
+  const c = Number(document.getElementById('pipe-c').value || 130);
+  const velocity = flow / ((Math.PI / 4) * diameter * diameter);
+  const headLoss = (10.67 * length * Math.pow(flow, 1.852)) / (Math.pow(c, 1.852) * Math.pow(diameter, 4.871));
+  document.getElementById('pipe-result').innerHTML = `Velocity: <strong>${formatNumber(velocity, 2)} m/s</strong><br>Head loss: <strong>${formatNumber(headLoss, 2)} m</strong>`;
+
+  const pumpFlow = Number(document.getElementById('pump-flow').value || 40) / 1000;
+  const pumpHead = Number(document.getElementById('pump-head').value || 45);
+  const pumpEff = Number(document.getElementById('pump-eff').value || 70) / 100;
+  const shaftPower = 9.81 * pumpFlow * pumpHead / pumpEff;
+  document.getElementById('pump-result').innerHTML = `Shaft power: <strong>${formatNumber(shaftPower, 1)} kW</strong><br>Motor size with 15% margin: <strong>${formatNumber(shaftPower * 1.15, 1)} kW</strong>`;
+
+  const tankDemand = Number(document.getElementById('tank-demand').value || 4500);
+  const tankBalance = Number(document.getElementById('tank-balance').value || 25) / 100;
+  const tankFire = Number(document.getElementById('tank-fire').value || 200);
+  const tankEmergency = Number(document.getElementById('tank-emergency').value || 10) / 100;
+  const totalStorage = tankDemand * tankBalance + tankFire + tankDemand * tankEmergency;
+  document.getElementById('tank-result').innerHTML = `Required storage: <strong>${formatNumber(totalStorage, 0)} m³</strong>`;
+}
+
+function renderAll() {
+  renderOverview();
+  renderProjects();
+  renderHydraulics();
+  renderMap();
+  renderLayerList();
+  renderBoq();
+  renderTeam();
+  renderReport();
+  renderCAD();
+  renderDesignCalculations();
+  setTheme();
+}
+
+function switchSection(section) {
+  activeSection = section;
+  document.querySelectorAll('.nav-item').forEach((button) => {
+    button.classList.toggle('active', button.dataset.section === section);
+  });
+  document.querySelectorAll('.panel').forEach((panel) => {
+    panel.classList.toggle('active', panel.id === section);
+  });
+  document.getElementById('page-title').textContent = section.charAt(0).toUpperCase() + section.slice(1);
+}
+
+function bindEvents() {
+  document.querySelectorAll('.nav-item').forEach((button) => {
+    button.addEventListener('click', () => switchSection(button.dataset.section));
+  });
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    state.theme = state.theme === 'light' ? 'dark' : 'light';
+    saveState();
+    setTheme();
+  });
+
+  document.getElementById('new-project-btn').addEventListener('click', () => switchSection('projects'));
+  document.getElementById('add-project-btn').addEventListener('click', addProject);
+  document.getElementById('add-node-btn').addEventListener('click', addNode);
+  document.getElementById('add-pipe-btn').addEventListener('click', addPipe);
+  document.getElementById('run-simulation-btn').addEventListener('click', runSimulation);
+  document.getElementById('sample-layer-btn').addEventListener('click', addSampleLayer);
+  document.getElementById('add-boq-item-btn').addEventListener('click', addBoqItem);
+  document.getElementById('invite-member-btn').addEventListener('click', inviteMember);
+  document.getElementById('generate-report-btn').addEventListener('click', generateReport);
+  document.getElementById('undo-line-btn').addEventListener('click', undoCADLine);
+  document.getElementById('clear-lines-btn').addEventListener('click', clearCADLines);
+  document.getElementById('cad-canvas').addEventListener('click', addCADLine);
+
+  ['contingency-rate','tax-rate'].forEach((id) => {
+    document.getElementById(id).addEventListener('input', () => {
+      state.contingency = Number(document.getElementById('contingency-rate').value || 10);
+      state.tax = Number(document.getElementById('tax-rate').value || 5);
+      saveState();
+      renderBoq();
+    });
+  });
+
+  ['demand-pop','demand-capita','demand-loss','demand-peak','pipe-flow','pipe-diameter','pipe-length','pipe-c','pump-flow','pump-head','pump-eff','tank-demand','tank-balance','tank-fire','tank-emergency'].forEach((id) => {
+    document.getElementById(id).addEventListener('input', renderDesignCalculations);
+  });
+
+  document.getElementById('show-pipes').addEventListener('change', renderMap);
+  document.getElementById('show-nodes').addEventListener('change', renderMap);
+  document.getElementById('show-labels').addEventListener('change', renderMap);
+}
+
+bindEvents();
+renderAll();
+switchSection('overview');
+
+window.addEventListener('beforeunload', saveState);
+
+console.log('Rayan Aqua Tech Consultancy workspace ready.');
+
+        

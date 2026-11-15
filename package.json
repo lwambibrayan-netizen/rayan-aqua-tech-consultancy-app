@@ -1,0 +1,21 @@
+{
+  "name": "rayan-aqua-tech-consultancy-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rayan Aqua Tech engineering workspace with authenticated shared storage and EPANET/QGIS service adapters.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "check": "node --check server.js && node --check cloud.js && node --check app.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-sqlite3": "^0.9.15",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "sqlite3": "^5.1.7"
+  }
+}

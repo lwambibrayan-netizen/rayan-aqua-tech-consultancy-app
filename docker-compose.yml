@@ -1,0 +1,20 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATA_DIR: /data
+      SESSION_SECRET: ${SESSION_SECRET:?Set a long random SESSION_SECRET in .env}
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      EPANET_SERVICE_URL: ${EPANET_SERVICE_URL:-}
+      QGIS_SERVICE_URL: ${QGIS_SERVICE_URL:-}
+      SERVICE_TOKEN: ${SERVICE_TOKEN:-}
+      SERVICE_TIMEOUT_MS: ${SERVICE_TIMEOUT_MS:-120000}
+    volumes:
+      - workspace_data:/data
+    restart: unless-stopped
+volumes:
+  workspace_data:
